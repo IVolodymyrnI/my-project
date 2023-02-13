@@ -1,39 +1,41 @@
-require("dotenv").config({ path: "link.env" });
-const routes = require("./routes/routes");
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+var createError = require("http-errors");
+var express = require("express");
+var path = require("path");
+var cookieParser = require("cookie-parser");
+var logger = require("morgan");
 
-//SERVER START
-const app = express();
+var indexRouter = require("./routes/index");
+var usersRouter = require("./routes/users");
+
+var app = express();
+
+// view engine setup
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "pug");
+
+app.use(logger("dev"));
 app.use(express.json());
-app.use(cors());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
 
-app.listen(3000, () => {
-  console.log(`Server Started at ${3000}`);
+app.use("/", indexRouter);
+app.use("/users", usersRouter);
+
+// catch 404 and forward to error handler
+app.use(function (req, res, next) {
+  next(createError(404));
 });
 
-// DATA BASE SECTION
-const mongoString = process.env.DATABASE_URL;
-mongoose.connect(mongoString);
-const database = mongoose.connection;
+// error handler
+app.use(function (err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get("env") === "development" ? err : {};
 
-database.on("error", (error) => {
-  console.log(error);
+  // render the error page
+  res.status(err.status || 500);
+  res.render("error");
 });
 
-database.once("connected", () => {
-  console.log("Database Connected");
-});
-
-// ROUTES
-
-app.use("/api", routes);
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
-// CORPS
-
-app.use(cors());
+module.exports = app;
